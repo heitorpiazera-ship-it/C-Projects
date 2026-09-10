@@ -145,13 +145,27 @@ void encontrarJogador(int m[20][20], int &pli, int &pco) {
 //Tenta mover o jogador em uma determinada direção (deltaLinha, deltaColuna).
 //Atualiza as coordenadas (pli, pco) e guarda o elemento que ficou abaixo do jogador.
 
-void moverJogador(int m[20][20], int &pli, int &pco, int &item_em_baixo, int deltaLinha, int deltaColuna) {
+void moverJogador(int m[20][20], int &pli, int &pco, int &item_em_baixo, int deltaLinha, int deltaColuna, int contador, int &movimentos) {
+    movimentos++;
 	m[pli][pco] = item_em_baixo;
 	int novaLinha = pli + deltaLinha;
 	int novaColuna = pco + deltaColuna;
 
-// Bloqueia movimento
-	if (m[novaLinha][novaColuna] == 1 || m[novaLinha][novaColuna] == 3) {
+	int destino = m[novaLinha][novaColuna];
+
+	bool portaFechada = false;
+
+
+	if (destino == 6) {
+		portaFechada = (contador % 2 == 0); 
+	}
+	
+	else if (destino == 7) {
+		portaFechada = (contador % 2 == 1); 
+	}
+
+	// Bloqueia movimento se for parede (1), bloco (3) ou porta fechada
+	if (destino == 1 || destino == 3 || portaFechada) {
 		m[pli][pco] = 2;
 	} else {
 		pli = novaLinha;
@@ -163,9 +177,8 @@ void moverJogador(int m[20][20], int &pli, int &pco, int &item_em_baixo, int del
 
 //Roda roda jequiti / gira a matrix
 
-void rotacionarMapa(int m[20][20], int &pli, int &pco, int &item_em_baixo, int &contador, bool paraDireita) {
+void rotacionarMapa(int m[20][20], int &pli, int &pco, int &item_em_baixo, int &contador, bool paraDireita, int &sentido) {
 	if (item_em_baixo != 4) return; // Só rotaciona se estiver sobre uma alavanca
-
 	int transposta[20][20];
 	m[pli][pco] = item_em_baixo;
 
@@ -178,6 +191,15 @@ void rotacionarMapa(int m[20][20], int &pli, int &pco, int &item_em_baixo, int &
 			}
 		}
 	}
+	if(paraDireita){
+	    sentido = (sentido + 90) % 360;
+	}else{
+	    sentido = (sentido - 90);
+	    if (sentido < 0) {
+	        sentido += 360;
+	    }
+	}
+	
 
 	copiarMatriz(transposta, m);
 
@@ -219,20 +241,37 @@ bool verificarVitoria(int item_em_baixo) {
 
 //Loop genérico de execução do jogo. Utilizado tanto para novas partidas quanto para partidas continuadas.
  
-void executarJogo(int m[20][20], const int mapa_inicial[20][20], int &pli, int &pco) {
+void executarJogo(int m[20][20], const int mapa_inicial[20][20], int &pli, int &pco, int &sentido) {
 	alternarCursor(false);
 	printf("\033[H\033[J"); // Limpa a tela
-
 	char x;
 	int contador = 0;
+	int movimentos = 0;
 	int item_em_baixo = 0;
+	string orientacao;
 
 	while (true) {
 		SetCursorPos(0, 0);
 		desenharMapa(m, contador);
+		
 
 		cout << "texto depois da matriz\n";
-		cout << "Quantidade de rotações:" << contador;
+		cout << "Quantidade de rotações:" << contador<<endl;
+		cout<<"Quantidade de movimentos: "<<movimentos<<endl;
+		if(sentido == 0){
+		    orientacao = "original";
+		    cout << "A orientação atual é: " << orientacao<< "\033[K";
+		}else if(sentido == 90){
+		    orientacao = "capotado 90°";
+		    cout << "A orientação atual é: " << orientacao<< "\033[K";
+		}else if(sentido == 180){
+		    orientacao = "invertido 180°";
+		    cout << "A orientação atual é: " << orientacao<< "\033[K";
+		}else if(sentido == 270){
+		    orientacao = "capotado 270°";
+		    cout << "A orientação atual é: " << orientacao<< "\033[K";
+		}
+		
 
 		if (verificarVitoria(item_em_baixo)) break;
 
@@ -255,19 +294,19 @@ void executarJogo(int m[20][20], const int mapa_inicial[20][20], int &pli, int &
 		}
 
 		switch (x) {
-			case 'w': moverJogador(m, pli, pco, item_em_baixo, -1, 0); break;
-			case 's': moverJogador(m, pli, pco, item_em_baixo, 1, 0);  break;
-			case 'a': moverJogador(m, pli, pco, item_em_baixo, 0, -1); break;
-			case 'd': moverJogador(m, pli, pco, item_em_baixo, 0, 1);  break;
-			case 'e': rotacionarMapa(m, pli, pco, item_em_baixo, contador, true);  break; // Rotação Direita
-			case 'q': rotacionarMapa(m, pli, pco, item_em_baixo, contador, false); break; // Rotação Esquerda
+			case 'w': moverJogador(m, pli, pco, item_em_baixo, -1, 0, contador, movimentos); break;
+			case 's': moverJogador(m, pli, pco, item_em_baixo, 1, 0, contador, movimentos);  break;
+			case 'a': moverJogador(m, pli, pco, item_em_baixo, 0, -1, contador, movimentos); break;
+			case 'd': moverJogador(m, pli, pco, item_em_baixo, 0, 1, contador, movimentos);  break;
+			case 'e': rotacionarMapa(m, pli, pco, item_em_baixo, contador, true, sentido);  break; // Rotação Direita
+			case 'q': rotacionarMapa(m, pli, pco, item_em_baixo, contador, false, sentido); break; // Rotação Esquerda
 		}
 	}
 }
 
 //Mapa 1
 
-void mapa1(bool &jogado, int matriz_continuada[20][20]) {
+void mapa1(bool &jogado, int matriz_continuada[20][20], int sentido = 0) {
 	const int mapa_inicial[20][20] = {
 		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1},
@@ -296,14 +335,14 @@ void mapa1(bool &jogado, int matriz_continuada[20][20]) {
 	jogado = true;
 
 	copiarMatriz(mapa_inicial, m);
-	executarJogo(m, mapa_inicial, pli, pco);
+	executarJogo(m, mapa_inicial, pli, pco, sentido);
 	copiarMatriz(m, matriz_continuada);
 }
 
 
 //Mapa 2
  
-void mapa2(bool &jogado, int matriz_continuada[20][20]) {
+void mapa2(bool &jogado, int matriz_continuada[20][20], int sentido = 0) {
 	const int mapa_inicial[20][20] = {
 		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 		{1, 2, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 4, 1},
@@ -332,13 +371,13 @@ void mapa2(bool &jogado, int matriz_continuada[20][20]) {
 	jogado = true;
 
 	copiarMatriz(mapa_inicial, m);
-	executarJogo(m, mapa_inicial, pli, pco);
+	executarJogo(m, mapa_inicial, pli, pco, sentido);
 	copiarMatriz(m, matriz_continuada);
 }
 
 //Mapa 3
 
-void mapa3(bool &jogado, int matriz_continuada[20][20]) {
+void mapa3(bool &jogado, int matriz_continuada[20][20], int sentido = 0) {
 	const int mapa_inicial[20][20] = {
 		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 		{1, 0, 0, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 4, 1, 0, 0, 0, 0, 1},
@@ -367,11 +406,11 @@ void mapa3(bool &jogado, int matriz_continuada[20][20]) {
 	jogado = true;
 
 	copiarMatriz(mapa_inicial, m);
-	executarJogo(m, mapa_inicial, pli, pco);
+	executarJogo(m, mapa_inicial, pli, pco, sentido);
 	copiarMatriz(m, matriz_continuada);
 }
 
-void jogo_continuado(int matriz_continuada[20][20]) {
+void jogo_continuado(int matriz_continuada[20][20], int sentido = 0) {
 	const int mapa_inicial[20][20] = {
 		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1},
@@ -397,7 +436,7 @@ void jogo_continuado(int matriz_continuada[20][20]) {
 
 	int pli = 0, pco = 0;
 	encontrarJogador(matriz_continuada, pli, pco);
-	executarJogo(matriz_continuada, mapa_inicial, pli, pco);
+	executarJogo(matriz_continuada, mapa_inicial, pli, pco, sentido);
 }
 
 // ============================================================================
