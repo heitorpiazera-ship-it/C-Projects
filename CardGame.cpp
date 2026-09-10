@@ -3,9 +3,6 @@
 #include <unistd.h>
 using namespace std;
 
-// ============================================================================
-// FUNÇÕES DE SISTEMA E INPUT
-// ============================================================================
 
 //Lê um único caractere do teclado.
 
@@ -45,9 +42,9 @@ void limparTela() {
 	(void)system("clear");
 }
 
-// ============================================================================
+
 // FUNÇÕES DE MANIPULAÇÃO DE MATRIZ E ESTADO DO JOGO
-// ============================================================================
+
 
 
 //Copia o conteúdo de uma matriz 20x20 de origem para uma matriz de destino.
@@ -114,10 +111,20 @@ void desenharMapa(int m[20][20], int contador) {
 					cout << "S";
 					break;
 				case 6:
-					cout << (contador % 2 == 1 ? ":" : "=");
+					if(contador % 2 == 1){
+					    cout<<":";
+					}
+					if(contador % 2 == 0){
+					    cout<<"=";
+					}
 					break;
 				case 7:
-					cout << (contador % 2 == 1 ? "|" : ";");
+				    if(contador % 2 == 1){
+					    cout<<"|";
+					}
+					if(contador % 2 == 0){
+					    cout<<";";
+					}
 					break;
 				default:
 					cout << " ";
@@ -146,7 +153,9 @@ void encontrarJogador(int m[20][20], int &pli, int &pco) {
 //Atualiza as coordenadas (pli, pco) e guarda o elemento que ficou abaixo do jogador.
 
 void moverJogador(int m[20][20], int &pli, int &pco, int &item_em_baixo, int deltaLinha, int deltaColuna, int contador, int &movimentos) {
-    movimentos++;
+
+        movimentos++;
+    
 	m[pli][pco] = item_em_baixo;
 	int novaLinha = pli + deltaLinha;
 	int novaColuna = pco + deltaColuna;
@@ -167,6 +176,7 @@ void moverJogador(int m[20][20], int &pli, int &pco, int &item_em_baixo, int del
 	// Bloqueia movimento se for parede (1), bloco (3) ou porta fechada
 	if (destino == 1 || destino == 3 || portaFechada) {
 		m[pli][pco] = 2;
+		movimentos--;
 	} else {
 		pli = novaLinha;
 		pco = novaColuna;
@@ -382,7 +392,7 @@ void mapa3(bool &jogado, int matriz_continuada[20][20], int sentido = 0) {
 		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 		{1, 0, 0, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 4, 1, 0, 0, 0, 0, 1},
 		{1, 0, 2, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 5, 0, 1},
-		{1, 0, 0, 0, 0, 1, 1, 1, 6, 1, 1, 7, 1, 1, 1, 0, 0, 0, 0, 1},
+		{1, 4, 0, 0, 0, 1, 1, 1, 6, 1, 1, 7, 1, 1, 1, 0, 0, 0, 0, 1},
 		{1, 1, 6, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 7, 1, 1},
 		{1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1},
 		{1, 0, 3, 0, 0, 0, 0, 1, 4, 0, 0, 4, 1, 0, 0, 0, 0, 3, 0, 1},
