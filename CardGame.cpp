@@ -1,8 +1,28 @@
 #include <iostream>
 #include <termios.h>
 #include <unistd.h>
+#include <fstream>
+#include <sstream>
+#include <cstdio>
+#include <string>
 using namespace std;
 
+const int TAM = 20; 
+
+struct Posicao {
+ int lin, col;
+};
+
+
+struct Jogo {
+ int cenario[TAM][TAM]; 
+ int n; 
+ int orientacao; 
+ Posicao jogador;
+ int movimentos, rotacoes;
+ int numeroMapa;
+ string titulo;
+};
 
 //Lê um único caractere do teclado.
 
