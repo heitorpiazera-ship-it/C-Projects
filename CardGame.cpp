@@ -93,41 +93,16 @@ void limparTela() {
 	(void)system("clear");
 }
 
-
-// FUNÇÕES DE MANIPULAÇÃO DE MATRIZ E ESTADO DO JOGO
-
-
-
-//Copia o conteúdo de uma matriz 20x20 de origem para uma matriz de destino.
-
-void copiarMatriz(const int origem[20][20], int destino[20][20]) {
-	for (int i = 0; i < 20; i++) {
-		for (int j = 0; j < 20; j++) {
-			destino[i][j] = origem[i][j];
-		}
-	}
-}
-
-//Capia para matrizes não constantes
-
-void copiarMatriz(int origem[20][20], int destino[20][20]) {
-	for (int i = 0; i < 20; i++) {
-		for (int j = 0; j < 20; j++) {
-			destino[i][j] = origem[i][j];
-		}
-	}
-}
-
 //Aplica a física minha maior inimiga
  
-void gravidade(int m[20][20]) {
-	for (int l = 18; l >= 0; l--) {
-		for (int c = 0; c < 20; c++) {
-			if (m[l][c] == 3) {
+void gravidade(Jogo &j) {
+	for (int l = j.n - 2; l >= 0; l--) {
+		for (int c = 0; c < j.n; c++) {
+			if (j.cenario[l][c] == 3) {
 				int pos = l;
-				while (pos < 19 && m[pos + 1][c] == 0) {
-					m[pos + 1][c] = 3;
-					m[pos][c] = 0;
+				while (pos < 19 && j.cenario[pos + 1][c] == 0) {
+					j.cenario[pos + 1][c] = 3;
+					j.cenario[pos][c] = 0;
 					pos++;
 				}
 			}
@@ -138,10 +113,10 @@ void gravidade(int m[20][20]) {
 
 //Desenha a matriz do jogo no console
  
-void desenharMapa(int m[20][20], int contador) {
-	for (int i = 0; i < 20; i++) {
-		for (int j = 0; j < 20; j++) {
-			switch (m[i][j]) {
+void desenharMapa(const Jogo &j) {
+	for (int i = 0; i < j.n; i++) {
+		for (int c = 0; c < j.n; c++) {
+			switch (j.cenario[i][c]) {
 				case 0:
 					cout << " ";
 					break;
@@ -162,18 +137,18 @@ void desenharMapa(int m[20][20], int contador) {
 					cout << "S";
 					break;
 				case 6:
-					if(contador % 2 == 1){
+					if(j.rotacoes % 2 == 1){
 					    cout<<":";
 					}
-					if(contador % 2 == 0){
+					if(j.rotacoes % 2 == 0){
 					    cout<<"=";
 					}
 					break;
 				case 7:
-				    if(contador % 2 == 1){
+				    if(j.rotacoes % 2 == 1){
 					    cout<<"|";
 					}
-					if(contador % 2 == 0){
+					if(j.rotacoes % 2 == 0){
 					    cout<<";";
 					}
 					break;
@@ -201,99 +176,107 @@ void encontrarJogador(int m[20][20], int &pli, int &pco) {
 
 
 //Tenta mover o jogador em uma determinada direção (deltaLinha, deltaColuna).
-//Atualiza as coordenadas (pli, pco) e guarda o elemento que ficou abaixo do jogador.
 
-void moverJogador(int m[20][20], int &pli, int &pco, int &item_em_baixo, int deltaLinha, int deltaColuna, int contador, int &movimentos) {
+void moverJogador(Jogo &j, char x) {
 
-        movimentos++;
-    
-	m[pli][pco] = item_em_baixo;
-	int novaLinha = pli + deltaLinha;
-	int novaColuna = pco + deltaColuna;
+    j.movimentos++;
+	int deltaLinha = 0;
+	int deltaColuna = 0;
+	
+    if(x == 'w'){deltaLinha = -1; deltaColuna = 0;}
+	if(x == 'a'){deltaLinha = 0; deltaColuna = -1;}
+	if(x == 's'){deltaLinha = 1; deltaColuna = 0;}
+	if(x == 'd'){deltaLinha = 0; deltaColuna = 1;}
 
-	int destino = m[novaLinha][novaColuna];
+	j.cenario[j.jogador.lin][j.jogador.col] = j.item_em_baixo;
+	int novaLinha = j.jogador.lin + deltaLinha;
+	int novaColuna = j.jogador.col + deltaColuna;
+
+	if(novaLinha < 0 || novaLinha >= j.n || novaColuna < 0 || novaColuna >= j.n){
+		j.cenario[j.jogador.lin][j.jogador.col] = 2;
+		j.movimentos--;
+		return;
+	}
+
+	int destino = j.cenario[novaLinha][novaColuna];
 
 	bool portaFechada = false;
 
 
 	if (destino == 6) {
-		portaFechada = (contador % 2 == 0); 
+		portaFechada = (j.rotacoes % 2 == 0); 
 	}
 	
 	else if (destino == 7) {
-		portaFechada = (contador % 2 == 1); 
+		portaFechada = (j.rotacoes % 2 == 1); 
 	}
 
 	// Bloqueia movimento se for parede (1), bloco (3) ou porta fechada
 	if (destino == 1 || destino == 3 || portaFechada) {
-		m[pli][pco] = 2;
-		movimentos--;
+		j.cenario[j.jogador.lin][j.jogador.col] = 2;
+		j.movimentos--;
 	} else {
-		pli = novaLinha;
-		pco = novaColuna;
-		item_em_baixo = m[pli][pco];
-		m[pli][pco] = 2;
+		j.jogador.lin = novaLinha;
+		j.jogador.col = novaColuna;
+		j.item_em_baixo = j.cenario[j.jogador.lin][j.jogador.col];
+		j.cenario[j.jogador.lin][j.jogador.col] = 2;
 	}
 }
 
 //Roda roda jequiti / gira a matrix
 
-void rotacionarMapa(int m[20][20], int &pli, int &pco, int &item_em_baixo, int &contador, bool paraDireita, int &sentido) {
-	if (item_em_baixo != 4) return; // Só rotaciona se estiver sobre uma alavanca
+void rotacionarMapa(Jogo &j, bool paraDireita) {
+	if (j.item_em_baixo != 4) return; // Só rotaciona se estiver sobre uma alavanca
 	int transposta[20][20];
-	m[pli][pco] = item_em_baixo;
+	j.cenario[j.jogador.lin][j.jogador.col] = j.item_em_baixo;
 
 	for (int l = 0; l < 20; l++) {
 		for (int c = 0; c < 20; c++) {
 			if (paraDireita) {
-				transposta[c][19 - l] = m[l][c];
+				transposta[c][19 - l] = j.cenario[l][c];
 			} else {
-				transposta[19 - c][l] = m[l][c];
+				transposta[19 - c][l] = j.cenario[l][c];
 			}
 		}
 	}
 	if(paraDireita){
-	    sentido = (sentido + 90) % 360;
+	    j.orientacao = j.orientacao + 1;
 	}else{
-	    sentido = (sentido - 90);
-	    if (sentido < 0) {
-	        sentido += 360;
+	    j.orientacao = j.orientacao - 1;
+	    if (j.orientacao < 0) {
+	        j.orientacao = 3;
 	    }
 	}
-	
 
-	copiarMatriz(transposta, m);
-
-	int old_pli = pli;
-	if (paraDireita) {
-		pli = pco;
-		pco = 19 - old_pli;
-	} else {
-		pli = 19 - pco;
-		pco = old_pli;
+	//(Copia a matriz de volta)
+	for (int l = 0; l < j.n; l++) {
+		for (int c = 0; c < j.n; c++) {
+			j.cenario[l][c] = transposta[l][c];
+		}
 	}
 
-	item_em_baixo = m[pli][pco];
-	m[pli][pco] = 2;
-	contador++;
-	gravidade(m);
+	int old_pli = j.jogador.lin;
+	if (paraDireita) {
+		j.jogador.lin = j.jogador.col;
+		j.jogador.col = 19 - old_pli;
+	} else {
+		j.jogador.lin = 19 - j.jogador.col;
+		j.jogador.col = old_pli;
+	}
+
+	j.item_em_baixo = j.cenario[j.jogador.lin][j.jogador.col];
+	j.cenario[j.jogador.lin][j.jogador.col] = 2;
+	j.rotacoes++;
+	gravidade(j);
 }
 
 
 //Checa se o jogador alcançou o final.
 
-bool verificarVitoria(int item_em_baixo) {
-	if (item_em_baixo == 5) {
-		limparTela();
-		alternarCursor(true);
-		cout << "========================================\n";
-		cout << "        PARABENS! VOCE VENCEU!          \n";
-		cout << "========================================\n\n";
-		cout << "Pressione qualquer tecla para voltar ao menu...";
-		getch();
-		limparTela();
+bool verificarVitoria(const Jogo &j) {
+	if (j.item_em_baixo == 5) {
 		return true;
-	}
+	}else
 	return false;
 }
 
@@ -302,39 +285,39 @@ bool verificarVitoria(int item_em_baixo) {
 
 //Loop genérico de execução do jogo. Utilizado tanto para novas partidas quanto para partidas continuadas.
  
-void executarJogo(int m[20][20], const int mapa_inicial[20][20], int &pli, int &pco, int &sentido) {
+void executarJogo(Jogo &j) {
 	alternarCursor(false);
 	printf("\033[H\033[J"); // Limpa a tela
 	char x;
-	int contador = 0;
-	int movimentos = 0;
-	int item_em_baixo = 0;
-	string orientacao;
-
+	
 	while (true) {
 		SetCursorPos(0, 0);
-		desenharMapa(m, contador);
+		desenharMapa(j);
 		
-
-		cout << "texto depois da matriz\n";
-		cout << "Quantidade de rotações:" << contador<<endl;
-		cout<<"Quantidade de movimentos: "<<movimentos<<endl;
-		if(sentido == 0){
-		    orientacao = "original";
-		    cout << "A orientação atual é: " << orientacao<< "\033[K";
-		}else if(sentido == 90){
-		    orientacao = "capotado 90°";
-		    cout << "A orientação atual é: " << orientacao<< "\033[K";
-		}else if(sentido == 180){
-		    orientacao = "invertido 180°";
-		    cout << "A orientação atual é: " << orientacao<< "\033[K";
-		}else if(sentido == 270){
-		    orientacao = "capotado 270°";
-		    cout << "A orientação atual é: " << orientacao<< "\033[K";
+		cout<< "Quantidade de rotações: " << j.rotacoes<<endl;
+		cout<<"Quantidade de movimentos: "<< j.movimentos<<endl;
+		if(j.orientacao == 0){
+		    cout << "A orientação atual é: " << j.orientacao * 90<< "°" <<"\033[K";
+		}else if(j.orientacao == 1){
+		    cout << "A orientação atual é: " << j.orientacao * 90<< "°" <<"\033[K";
+		}else if(j.orientacao == 2){
+		    cout << "A orientação atual é: " << j.orientacao * 90<< "°" <<"\033[K";
+		}else if(j.orientacao == 3){
+		    cout << "A orientação atual é: " << j.orientacao * 90<< "°" <<"\033[K";
 		}
 		
 
-		if (verificarVitoria(item_em_baixo)) break;
+		if (verificarVitoria(j)){
+			limparTela();
+			alternarCursor(true);
+			cout << "========================================\n";
+			cout << "        PARABENS! VOCE VENCEU!          \n";
+			cout << "========================================\n\n";
+			cout << "Pressione qualquer tecla para voltar ao menu...";
+			getch();
+			limparTela();
+			break; // Sai do loop e volta para o menu
+		}
 
 		x = getch();
 
@@ -347,158 +330,21 @@ void executarJogo(int m[20][20], const int mapa_inicial[20][20], int &pli, int &
 
 		// R/r: Reinicia o nível
 		if (x == 'r' || x == 'R') {
-			copiarMatriz(mapa_inicial, m);
-			encontrarJogador(m, pli, pco);
-			contador = 0;
-			item_em_baixo = 0;
+			CarregarJogo(j.numeroMapa, j);
 			continue;
 		}
 
 		switch (x) {
-			case 'w': moverJogador(m, pli, pco, item_em_baixo, -1, 0, contador, movimentos); break;
-			case 's': moverJogador(m, pli, pco, item_em_baixo, 1, 0, contador, movimentos);  break;
-			case 'a': moverJogador(m, pli, pco, item_em_baixo, 0, -1, contador, movimentos); break;
-			case 'd': moverJogador(m, pli, pco, item_em_baixo, 0, 1, contador, movimentos);  break;
-			case 'e': rotacionarMapa(m, pli, pco, item_em_baixo, contador, true, sentido);  break; // Rotação Direita
-			case 'q': rotacionarMapa(m, pli, pco, item_em_baixo, contador, false, sentido); break; // Rotação Esquerda
+			case 'w': moverJogador(j, x); break;
+			case 's': moverJogador(j, x);  break;
+			case 'a': moverJogador(j, x); break;
+			case 'd': moverJogador(j, x);  break;
+			case 'e': rotacionarMapa(j, true);  break; // Rotação Direita
+			case 'q': rotacionarMapa(j, false); break; // Rotação Esquerda
 		}
 	}
 }
 
-//Mapa 1
-
-void mapa1(bool &jogado, int matriz_continuada[20][20], int sentido = 0) {
-	const int mapa_inicial[20][20] = {
-		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 4, 0, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 6, 1, 6, 1, 1, 1, 1, 1, 1},
-		{0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 3, 1, 1, 1, 1, 1, 1},
-		{0, 0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-		{1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-		{1, 1, 0, 1, 0, 1, 1, 1, 3, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{1, 1, 7, 1, 7, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1},
-		{1, 0, 0, 0, 5, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1},
-		{1, 0, 4, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 4, 0, 1, 1, 1, 1, 1},
-		{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-	};
-
-	int pli = 6, pco = 6;
-	int m[20][20];
-	jogado = true;
-
-	copiarMatriz(mapa_inicial, m);
-	executarJogo(m, mapa_inicial, pli, pco, sentido);
-	copiarMatriz(m, matriz_continuada);
-}
-
-
-//Mapa 2
- 
-void mapa2(bool &jogado, int matriz_continuada[20][20], int sentido = 0) {
-	const int mapa_inicial[20][20] = {
-		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{1, 2, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 4, 1},
-		{1, 0, 3, 0, 1, 0, 4, 0, 0, 1, 0, 3, 0, 0, 1, 0, 1, 1, 0, 1},
-		{1, 0, 0, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 6, 0, 1, 5, 0, 1},
-		{1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 4, 0, 1, 0, 0, 1, 0, 4, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1},
-		{1, 0, 0, 0, 1, 6, 1, 1, 1, 1, 7, 1, 1, 1, 6, 1, 0, 0, 0, 1},
-		{1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1},
-		{1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1},
-		{1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1},
-		{1, 0, 0, 0, 1, 7, 1, 1, 1, 1, 6, 1, 1, 1, 7, 1, 0, 0, 0, 1},
-		{1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 4, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 4, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1},
-		{1, 0, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 0, 0, 7, 0, 0, 0, 0, 1},
-		{1, 0, 1, 1, 1, 0, 0, 3, 0, 1, 0, 0, 4, 0, 1, 0, 3, 0, 0, 1},
-		{1, 4, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
-		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-	};
-
-	int pli = 1, pco = 1;
-	int m[20][20];
-	jogado = true;
-
-	copiarMatriz(mapa_inicial, m);
-	executarJogo(m, mapa_inicial, pli, pco, sentido);
-	copiarMatriz(m, matriz_continuada);
-}
-
-//Mapa 3
-
-void mapa3(bool &jogado, int matriz_continuada[20][20], int sentido = 0) {
-	const int mapa_inicial[20][20] = {
-		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{1, 0, 0, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 4, 1, 0, 0, 0, 0, 1},
-		{1, 0, 2, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 5, 0, 1},
-		{1, 4, 0, 0, 0, 1, 1, 1, 6, 1, 1, 7, 1, 1, 1, 0, 0, 0, 0, 1},
-		{1, 1, 6, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 7, 1, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 3, 0, 0, 0, 0, 1, 4, 0, 0, 4, 1, 0, 0, 0, 0, 3, 0, 1},
-		{1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-		{1, 0, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1},
-		{1, 1, 7, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 6, 1, 1},
-		{1, 1, 6, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 7, 1, 1},
-		{1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1, 0, 0, 0, 1},
-		{1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-		{1, 0, 3, 0, 0, 0, 0, 1, 4, 0, 0, 4, 1, 0, 0, 0, 0, 3, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 1, 7, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 6, 1, 1},
-		{1, 0, 0, 0, 0, 1, 1, 1, 7, 1, 1, 6, 1, 1, 1, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 1, 4, 0, 0, 0, 0, 0, 0, 4, 1, 0, 0, 0, 0, 1},
-		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-	};
-
-	int pli = 2, pco = 2;
-	int m[20][20];
-	jogado = true;
-
-	copiarMatriz(mapa_inicial, m);
-	executarJogo(m, mapa_inicial, pli, pco, sentido);
-	copiarMatriz(m, matriz_continuada);
-}
-
-void jogo_continuado(int matriz_continuada[20][20], int sentido = 0) {
-	const int mapa_inicial[20][20] = {
-		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 4, 0, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 6, 1, 6, 1, 1, 1, 1, 1, 1},
-		{0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 3, 1, 1, 1, 1, 1, 1},
-		{0, 0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-		{1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-		{1, 1, 0, 1, 0, 1, 1, 1, 3, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		{1, 1, 7, 1, 7, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1},
-		{1, 0, 0, 0, 5, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1},
-		{1, 0, 4, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 4, 0, 1, 1, 1, 1, 1},
-		{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-	};
-
-	int pli = 0, pco = 0;
-	encontrarJogador(matriz_continuada, pli, pco);
-	executarJogo(matriz_continuada, mapa_inicial, pli, pco, sentido);
-}
 
 // ============================================================================
 // MENU PRINCIPAL E SELEÇÃO DE FASES
@@ -506,7 +352,7 @@ void jogo_continuado(int matriz_continuada[20][20], int sentido = 0) {
 
 //Novo jogo menu:
  
-void menuSelecaoMapa(bool &jogado, int matriz_continuada[20][20]) {
+void menuSelecaoMapa() {
 	limparTela();
 	int escolhaMapa;
 	cout << "========================================\n";
@@ -521,12 +367,16 @@ void menuSelecaoMapa(bool &jogado, int matriz_continuada[20][20]) {
 	cin.ignore(10000, '\n');
 
 	limparTela();
-	if (escolhaMapa == 1) {
-		mapa1(jogado, matriz_continuada);
-	} else if (escolhaMapa == 2) {
-		mapa2(jogado, matriz_continuada);
-	} else if (escolhaMapa == 3) {
-		mapa3(jogado, matriz_continuada);
+	if(escolhaMapa >= 1 && escolhaMapa <= 3){
+	Jogo meuJogo;
+	CarregarJogo(escolhaMapa, meuJogo);
+	executarJogo(meuJogo);
+	}else{
+		limparTela();
+		cout<<"essa opção é inválida, por favor insira uma opção válida entre 1 a 4!!"<<endl;
+		cout << "Pressione qualquer tecla para continuar...";
+		getch();
+		limparTela();
 	}
 }
 
@@ -551,9 +401,7 @@ void exibirSobre() {
 }
 
 int main() {
-	bool jogado = false;
 	int escolha_menu1;
-	int matriz_continuada[20][20];
 
 	while (true) {
 		cout << "CARDGAME" << endl;
@@ -566,14 +414,11 @@ int main() {
 		cin.ignore(10000, '\n');
 
 		if (escolha_menu1 == 1) {
-			menuSelecaoMapa(jogado, matriz_continuada);
+			menuSelecaoMapa();
 		} else if (escolha_menu1 == 2) {
-			if (!jogado) {
 				cout << "Nenhum jogo foi iniciado" << endl;
-			} else {
-				jogo_continuado(matriz_continuada);
 			}
-		} else if (escolha_menu1 == 3) {
+		else if (escolha_menu1 == 3) {
 			exibirSobre();
 		} else if (escolha_menu1 == 4) {
 			return 0;
