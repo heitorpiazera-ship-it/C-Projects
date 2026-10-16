@@ -1,10 +1,9 @@
 #include <iostream>
-#include <termios.h>
-#include <unistd.h>
 #include <fstream>
 #include <sstream>
 #include <cstdio>
 #include <string>
+#include <conio.h> // Biblioteca exclusiva do Windows
 using namespace std;
 
 const int TAM = 20; 
@@ -55,18 +54,10 @@ bool CarregarJogo(int numero_mapa, Jogo &j){
 	return true;
 }
 
-//Lê um único caractere do teclado.
 
-int getch(void) {
-	int ch;
-	struct termios oldt, newt;
-	tcgetattr(STDIN_FILENO, &oldt);
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-	ch = getchar();
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-	return ch;
+// Lê um único caractere do teclado no Windows
+int getch() {
+    return _getch();
 }
 
 
