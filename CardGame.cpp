@@ -24,6 +24,37 @@ struct Jogo {
  string titulo;
 };
 
+bool CarregarJogo(int numero_mapa, Jogo &j){
+	string NomeMapa = "mapa" + to_string(numero_mapa) + ".csv";
+	ifstream arq(NomeMapa);
+	if(!arq.is_open()){
+		return false;
+	}
+	string frase;
+	getline(arq, frase);
+	j.n = stoi(frase);
+	getline(arq, frase);
+	j.titulo = frase;
+	for(int i = 0;i<j.n;i++){
+	getline(arq, frase);
+	stringstream ss(frase);
+	string celula;
+		int c = 0;
+
+		while(getline(ss, celula, ',')){
+			
+			j.cenario[i][c] = stoi(celula);
+			if(j.cenario[i][c] == 2){
+				j.jogador.lin = i;
+				j.jogador.col = c;
+			}
+			c++;
+		}
+	}
+	arq.close();
+	return true;
+}
+
 //Lê um único caractere do teclado.
 
 int getch(void) {
