@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <string>
 #include <conio.h> // Biblioteca exclusiva do Windows
+#include <windows.h> // Biblioteca exclusiva do Windows
 using namespace std;
 
 const int TAM = 20; 
@@ -18,9 +19,10 @@ struct Jogo {
  int n; 
  int orientacao; 
  Posicao jogador;
- int movimentos, rotacoes;
+ int movimentos = 0, rotacoes = 0;
  int numeroMapa;
  string titulo;
+ int item_em_baixo;
 };
 
 bool CarregarJogo(int numero_mapa, Jogo &j){
@@ -54,6 +56,50 @@ bool CarregarJogo(int numero_mapa, Jogo &j){
 	return true;
 }
 
+bool CarregarJogoSalvo(Jogo &j){
+	ifstream arq("jogo_salvo.csv");
+	if(!arq.is_open()){
+		return false;
+	}
+	string frase;
+	getline(arq, frase);
+	j.n = stoi(frase);
+	getline(arq, frase);
+	j.orientacao = stoi(frase);
+	getline(arq, frase);
+	j.jogador.lin = stoi(frase);
+	getline(arq, frase);
+	j.jogador.col = stoi(frase);
+	getline(arq, frase);
+	j.movimentos = stoi(frase);
+	getline(arq, frase);
+	j.rotacoes = stoi(frase);
+	getline(arq, frase);
+	j.numeroMapa = stoi(frase);
+	getline(arq, frase);
+	j.titulo = frase;
+	getline(arq, frase);
+	j.item_em_baixo = stoi(frase);
+	for(int i = 0;i<j.n;i++){
+	getline(arq, frase);
+	stringstream ss(frase);
+	string celula;
+		int c = 0;
+		while(getline(ss, celula, ',')){
+			
+			j.cenario[i][c] = stoi(celula);
+			if(j.cenario[i][c] == 2){
+				j.jogador.lin = i;
+				j.jogador.col = c;
+			}
+			c++;
+		}
+	}
+	arq.close();
+	return true;
+}
+
+
 
 // Lê um único caractere do teclado no Windows
 int getch() {
@@ -63,7 +109,7 @@ int getch() {
 
 //Posiciona o cursor do terminal nas coordenadas (XPos, YPos) usando sequências de escape ANSI.
 
-void SetCursorPos(int XPos, int YPos) {
+void PosicionarCursor(int XPos, int YPos) {
 	printf("\033[%d;%dH", YPos + 1, XPos + 1);
 }
 
@@ -81,7 +127,7 @@ void alternarCursor(bool exibir) {
 //Limpa a tela só isso
  
 void limparTela() {
-	(void)system("clear");
+	(void)system("cls");
 }
 
 //Aplica a física minha maior inimiga
@@ -91,7 +137,7 @@ void gravidade(Jogo &j) {
 		for (int c = 0; c < j.n; c++) {
 			if (j.cenario[l][c] == 3) {
 				int pos = l;
-				while (pos < 19 && j.cenario[pos + 1][c] == 0) {
+				while (pos < j.n - 1 && j.cenario[pos + 1][c] == 0) {
 					j.cenario[pos + 1][c] = 3;
 					j.cenario[pos][c] = 0;
 					pos++;
@@ -174,10 +220,10 @@ void moverJogador(Jogo &j, char x) {
 	int deltaLinha = 0;
 	int deltaColuna = 0;
 	
-    if(x == 'w'){deltaLinha = -1; deltaColuna = 0;}
-	if(x == 'a'){deltaLinha = 0; deltaColuna = -1;}
-	if(x == 's'){deltaLinha = 1; deltaColuna = 0;}
-	if(x == 'd'){deltaLinha = 0; deltaColuna = 1;}
+    if(x == 'w' || x == 'W'){deltaLinha = -1; deltaColuna = 0;}
+	if(x == 'a' || x == 'A'){deltaLinha = 0; deltaColuna = -1;}
+	if(x == 's' || x == 'S'){deltaLinha = 1; deltaColuna = 0;}
+	if(x == 'd' || x == 'D'){deltaLinha = 0; deltaColuna = 1;}
 
 	j.cenario[j.jogador.lin][j.jogador.col] = j.item_em_baixo;
 	int novaLinha = j.jogador.lin + deltaLinha;
@@ -271,6 +317,50 @@ bool verificarVitoria(const Jogo &j) {
 	return false;
 }
 
+bool SalvarJogo(const Jogo &j){
+	ofstream meu_arquivo;
+	meu_arquivo.open ("jogo_salvo.csv");
+	if (!meu_arquivo.is_open()) return false;
+	meu_arquivo << j.n << "\n";
+	meu_arquivo << j.orientacao << "\n";
+	meu_arquivo << j.jogador.lin << "\n";
+	meu_arquivo << j.jogador.col << "\n";
+	meu_arquivo << j.movimentos << "\n";
+	meu_arquivo << j.rotacoes << "\n";
+	meu_arquivo << j.numeroMapa << "\n";
+	meu_arquivo << j.titulo << "\n";
+	meu_arquivo << j.item_em_baixo << "\n";
+	for(int i = 0; i < j.n; i++){
+		for(int c = 0; c < j.n;c++){
+			meu_arquivo << j.cenario[i][c];
+			if( c < j.n - 1){
+			meu_arquivo << ",";
+			}
+		}
+		meu_arquivo << "\n";
+	}
+	meu_arquivo.close();
+	return true;
+
+	
+}
+
+void ProcessaTecla(Jogo &j, char x){
+switch (x) {
+			case 'W':
+			case 'w': moverJogador(j, x); break;
+			case 'S':
+			case 's': moverJogador(j, x);  break;
+			case 'A':
+			case 'a': moverJogador(j, x); break;
+			case 'D':
+			case 'd': moverJogador(j, x);  break;
+			case 'E':
+			case 'e': rotacionarMapa(j, true);  break; // Rotação Direita
+			case 'Q':
+			case 'q': rotacionarMapa(j, false); break; // Rotação Esquerda
+		}
+}
 
 //LOOP DE JOGO
 
@@ -282,7 +372,7 @@ void executarJogo(Jogo &j) {
 	char x;
 	
 	while (true) {
-		SetCursorPos(0, 0);
+		PosicionarCursor(0, 0);
 		desenharMapa(j);
 		
 		cout<< "Quantidade de rotações: " << j.rotacoes<<endl;
@@ -305,6 +395,9 @@ void executarJogo(Jogo &j) {
 			cout << "        PARABENS! VOCE VENCEU!          \n";
 			cout << "========================================\n\n";
 			cout << "Pressione qualquer tecla para voltar ao menu...";
+			// INVÁLIDA O SAVE AO VENCER
+			remove("jogo_salvo.csv");
+			
 			getch();
 			limparTela();
 			break; // Sai do loop e volta para o menu
@@ -314,6 +407,7 @@ void executarJogo(Jogo &j) {
 
 		// ESC: Retorna ao menu
 		if (x == 27) {
+			SalvarJogo(j);
 			limparTela();
 			alternarCursor(true);
 			break;
@@ -325,17 +419,47 @@ void executarJogo(Jogo &j) {
 			continue;
 		}
 
-		switch (x) {
-			case 'w': moverJogador(j, x); break;
-			case 's': moverJogador(j, x);  break;
-			case 'a': moverJogador(j, x); break;
-			case 'd': moverJogador(j, x);  break;
-			case 'e': rotacionarMapa(j, true);  break; // Rotação Direita
-			case 'q': rotacionarMapa(j, false); break; // Rotação Esquerda
-		}
+		ProcessaTecla(j, x);
 	}
 }
 
+
+void ReproduzirSolucao(int numero_mapa){
+	string NomeMapa = "mapa" + to_string(numero_mapa) + ".sol";
+	ifstream arq(NomeMapa);
+	if(!arq.is_open()){
+		cout<<"arquivo não existente";
+		return;
+	}
+	Jogo meuJogo;
+	CarregarJogo(numero_mapa, meuJogo);
+	string teclas;
+	getline(arq, teclas);
+	for(int i = 0; i < teclas.length(); i++){
+		limparTela();
+		char t = teclas[i];
+		if(t != 'w' && t != 'a' && t != 's' && t != 'd' && t != 'e' && t != 'q' &&  t != 'W' && t != 'A' && t != 'S' && t != 'D' && t != 'E' && t != 'Q'){
+			cout<<"Esse conjunto solução apresenta uma tecla invalida, diferente do padrão";
+			return;
+		}
+		ProcessaTecla(meuJogo, t);
+		SetCursorPos(0, 0);
+		desenharMapa(meuJogo);
+		Sleep(300); // Pausa de 300 milissegundos
+	
+	if (verificarVitoria(meuJogo)) {
+			cout << "\nSolucao valida! O jogador chegou a saida" << endl;
+			cout << "Total de teclas: " << (i + 1) << endl;
+			cout << "Movimentos: " << meuJogo.movimentos << " | Rotacoes: " << meuJogo.rotacoes << endl;
+			cout << "Pressione qualquer tecla para voltar...";
+			getch();
+			return; // Sai da função, pois a solução já resolveu o mapa
+		}
+		
+	}
+	cout<<"\nSolucao invalida! O jogador não chegou a saida" << endl;
+	return;
+}
 
 // ============================================================================
 // MENU PRINCIPAL E SELEÇÃO DE FASES
@@ -399,19 +523,45 @@ int main() {
 		cout << "Pressione o número indicado para:" << endl;
 		cout << "1 - Novo jogo" << endl;
 		cout << "2 - Continuar" << endl;
-		cout << "3 - Sobre" << endl;
-		cout << "4 - Fim" << endl;
+		cout<< "3 - Ver soluções" <<endl;
+		cout << "4 - Sobre" << endl;
+		cout << "5 - Fim" << endl;
 		cin >> escolha_menu1;
 		cin.ignore(10000, '\n');
 
 		if (escolha_menu1 == 1) {
 			menuSelecaoMapa();
-		} else if (escolha_menu1 == 2) {
-				cout << "Nenhum jogo foi iniciado" << endl;
+		}else if (escolha_menu1 == 2) {
+			Jogo meuJogo;
+				if(CarregarJogoSalvo(meuJogo)){
+					executarJogo(meuJogo);
+				}else{
+					cout<<"Nenhum jogo salvo foi encontrado" <<"\n";
+					cout<<"Pressione qualquer tecla para retornar ao menu" <<"\n";
+					getch();
+				}
 			}
 		else if (escolha_menu1 == 3) {
+				limparTela();
+			int escolha_solucao;
+			cout << "1 - Mapa 1 (Original)\n";
+			cout << "2 - Mapa 2 (Corredores em Cruz)\n";
+			cout << "3 - Mapa 3 (Labirinto Periférico)\n";
+			cout << "4 - Voltar ao Menu Principal\n";
+			cout << "Escolha uma opcao: ";
+			cin>>escolha_solucao;
+			if(escolha_solucao == 1){
+				ReproduzirSolucao(1);
+			}else if(escolha_solucao == 2){
+				ReproduzirSolucao(2);
+			}else if(escolha_solucao == 3){
+				ReproduzirSolucao(3);
+			}else if(escolha_solucao == 4){
+				continue;
+			}
+		}else if (escolha_menu1 == 4) {
 			exibirSobre();
-		} else if (escolha_menu1 == 4) {
+		}else if (escolha_menu1 == 5) {
 			return 0;
 		}
 	}
