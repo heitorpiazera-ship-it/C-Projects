@@ -538,6 +538,13 @@ void executarJogo(Jogo &j) {
         }
         char a;
         a = x;
+        bool b;
+        if(x == 'e'){
+        b = true;
+        }
+        else if(x == 'q'){
+        b = false;
+        }
         x = getch();
 
 
@@ -551,6 +558,34 @@ void executarJogo(Jogo &j) {
         if (x == 'r' || x == 'R') {
             CarregarJogo(j.numeroMapa, j);
             continue;
+        }
+
+        if(x == 'f'){
+            if(a == 'w'){
+                a = 's';
+                ProcessaTecla(j, a);
+            }
+            else if(a == 's'){
+                a = 'w';
+                ProcessaTecla(j, a);
+            }
+            else if(a == 'a'){
+                a = 'd';
+                ProcessaTecla(j, a);
+            }
+            else if(a == 'd'){
+                a = 'a';
+                ProcessaTecla(j, a);
+            }
+            else if(b == true){
+                b = false;
+                rotacionarMapa(j, b);
+            }
+            else if(b == false){
+                b = true;
+                rotacionarMapa(j, b);
+            }
+            
         }
         
         ProcessaTecla(j, x);
