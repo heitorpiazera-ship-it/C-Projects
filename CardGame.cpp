@@ -45,6 +45,12 @@ bool CarregarJogo(int numero_mapa, Jogo &j){
         j.n = stoi(frase);
         if (!getline(arq, frase)) return false;
         j.titulo = frase;
+
+        j.orientacao = 0;
+        j.movimentos = 0;
+        j.rotacoes = 0;
+        j.item_em_baixo = 0;
+
         for(int i = 0; i < j.n; i++){
             if (!getline(arq, frase)) return false;
             stringstream ss(frase);
@@ -336,6 +342,7 @@ void ProcessaTecla(Jogo &j, char x){
     }
 }
 
+
 void AtualizarRanking(int numero_mapa, string nome_jogador, int movimentos) {
     const int MAX = 10;
     Pontuacao ranking[MAX];
@@ -529,8 +536,10 @@ void executarJogo(Jogo &j) {
             limparTela();
             break; 
         }
-
+        char a;
+        a = x;
         x = getch();
+
 
         if (x == 27) {
             SalvarJogo(j);
@@ -543,7 +552,7 @@ void executarJogo(Jogo &j) {
             CarregarJogo(j.numeroMapa, j);
             continue;
         }
-
+        
         ProcessaTecla(j, x);
     }
 }
